@@ -1,173 +1,155 @@
-# An MCP-based Chatbot
+# Listening Companion
 
-(English | [中文](README_zh.md) | [日本語](README_ja.md))
+An elderly companion robot built on the [XiaoZhi AI](https://github.com/78/xiaozhi-esp32) firmware framework.
 
-## Introduction
+Listening Companion combines natural voice conversation, a touch-friendly interface, interactive stories, anti-fraud education, and family-oriented care features in a desktop device. The project is designed for older adults who may spend long periods alone and need an accessible way to talk, listen, learn, and stay connected with their families.
 
-👉 [Human: Give AI a camera vs AI: Instantly finds out the owner hasn't washed hair for three days【bilibili】](https://www.bilibili.com/video/BV1bpjgzKEhd/)
+<p align="center">
+  <img src="docs/readme/companion-home.png" alt="Listening Companion home screen" width="720">
+</p>
 
-👉 [Handcraft your AI girlfriend, beginner's guide【bilibili】](https://www.bilibili.com/video/BV1XnmFYLEJN/)
+> [!IMPORTANT]
+> This repository contains the device firmware. The companion backend and service console used by this deployment run inside the private network of the author's internship organization. They are not public Internet services and cannot be reached without authorized access to that internal network.
 
-As a voice interaction entry, the XiaoZhi AI chatbot leverages the AI capabilities of large models like Qwen / DeepSeek, and achieves multi-terminal control via the MCP protocol.
+## Overview
 
-<img src="docs/mcp-based-graph.jpg" alt="Control everything via MCP" width="320">
+The project keeps the proven audio, networking, display, and MCP foundations of XiaoZhi AI, then adds a user experience focused on older adults. Large touch targets, voice-first interaction, spoken feedback, and simple navigation make the device usable without a phone or keyboard.
 
-## Version Notes
+The current firmware targets the **Hiwonder ESP32-S3 board**, registered in the source tree as `HiwonderExploit_S3`. Its screen, audio codec, touch controller, camera, button, and I/O expander are initialized by a dedicated board implementation under `main/boards/HiwonderExploit_S3/`.
 
-The current v2 version is incompatible with the v1 partition table, so it is not possible to upgrade from v1 to v2 via OTA. For partition table details, see [partitions/v2/README.md](partitions/v2/README.md).
+The device works together with an internal backend that provides speech services, dialogue generation, story state, anti-fraud content, and optional family-care workflows. The firmware handles local peripherals and interaction state while the backend performs the heavier AI and content tasks.
 
-All hardware running v1 can be upgraded to v2 by manually flashing the firmware.
+## Main Experiences
 
-The stable version of v1 is 1.9.2. You can switch to v1 by running `git checkout v1`. The v1 branch will be maintained until February 2026.
+### Daily Companionship
 
-### Features Implemented
+The normal conversation mode provides a simple voice interface for everyday use. Users can wake the device, speak naturally, hear a streamed response, and read the current text on screen without navigating complex menus.
 
-- Wi-Fi / ML307 Cat.1 4G
-- Offline voice wake-up [ESP-SR](https://github.com/espressif/esp-sr)
-- Supports two communication protocols ([Websocket](docs/websocket.md) or MQTT+UDP)
-- Uses OPUS audio codec
-- Voice interaction based on streaming ASR + LLM + TTS architecture
-- Speaker recognition, identifies the current speaker [3D Speaker](https://github.com/modelscope/3D-Speaker)
-- OLED / LCD display, supports emoji display
-- Battery display and power management
-- Multi-language support (Chinese, English, Japanese)
-- Supports ESP32-C3, ESP32-S3, ESP32-P4 chip platforms
-- Device-side MCP for device control (Speaker, LED, Servo, GPIO, etc.)
-- Cloud-side MCP to extend large model capabilities (smart home control, PC desktop operation, knowledge search, email, etc.)
-- Customizable wake words, fonts, emojis, and chat backgrounds with online web-based editing ([Custom Assets Generator](https://github.com/78/xiaozhi-assets-generator))
+### Interactive Reading
+
+Interactive Reading turns an audiobook into a participatory story. At key moments, users choose the next plot direction by touch or voice. The device also supports story history and continuing unfinished stories.
+
+<p align="center">
+  <img src="docs/readme/interactive-story.png" alt="Interactive story choice screen" width="760">
+</p>
+
+### Anti-Fraud Education
+
+The anti-fraud mode presents common scams as short interactive scenarios. Users listen to a situation, choose a response, and learn the safer course of action through dialogue and audio. The backend converts selected public cases into senior-friendly lessons and manages content updates.
+
+<p align="center">
+  <img src="docs/readme/anti-fraud.png" alt="Anti-fraud interactive question" width="760">
+</p>
 
 ## Hardware
 
-### Breadboard DIY Practice
+### Supported Board
 
-See the Feishu document tutorial:
+This branch currently adapts the firmware for **Hiwonder Exploit S3** (`HiwonderExploit_S3`), based on the ESP32-S3 platform. The release configuration selects:
 
-👉 ["XiaoZhi AI Chatbot Encyclopedia"](https://ccnphfhqs21z.feishu.cn/wiki/F5krwD16viZoF0kKkvDcrZNYnhb?from=from_copylink)
+- target: `esp32s3`
+- board implementation: `main/boards/HiwonderExploit_S3/`
+- custom partition table: `partitions/v2/16m_hiwonder.csv`
+- wake-word detection while listening
 
-Breadboard demo:
+### Peripheral Integration
 
-![Breadboard Demo](docs/v1/wiring2.jpg)
+The Hiwonder board layer implements the following hardware path:
 
-### Supports 70+ Open Source Hardware (Partial List)
+- **320 × 240 touch display** using an SPI LCD and LVGL input device
+- **Touch controller** on I2C address `0x38`
+- **ES8311 audio codec** with 16 kHz microphone input and speaker output
+- **I2S audio bus** for microphone capture and synthesized speech playback
+- **Camera interface** connected to the ESP32-S3 parallel camera pins
+- **Wi-Fi networking** through the XiaoZhi `WifiBoard` base implementation
+- **Boot/action button** on GPIO 0
+- **XL9555 I/O expander** for audio power and display backlight control
+- **16 MB partition layout** for the Hiwonder firmware build
 
-- <a href="https://oshwhub.com/li-chuang-kai-fa-ban/li-chuang-shi-zhan-pai-esp32-s3-kai-fa-ban" target="_blank" title="LiChuang ESP32-S3 Development Board">LiChuang ESP32-S3 Development Board</a>
-- <a href="https://github.com/espressif/esp-box" target="_blank" title="Espressif ESP32-S3-BOX3">Espressif ESP32-S3-BOX3</a>
-- <a href="https://docs.m5stack.com/zh_CN/core/CoreS3" target="_blank" title="M5Stack CoreS3">M5Stack CoreS3</a>
-- <a href="https://docs.m5stack.com/en/atom/Atomic%20Echo%20Base" target="_blank" title="AtomS3R + Echo Base">M5Stack AtomS3R + Echo Base</a>
-- <a href="https://gf.bilibili.com/item/detail/1108782064" target="_blank" title="Magic Button 2.4">Magic Button 2.4</a>
-- <a href="https://www.waveshare.net/shop/ESP32-S3-Touch-AMOLED-1.8.htm" target="_blank" title="Waveshare ESP32-S3-Touch-AMOLED-1.8">Waveshare ESP32-S3-Touch-AMOLED-1.8</a>
-- <a href="https://github.com/Xinyuan-LilyGO/T-Circle-S3" target="_blank" title="LILYGO T-Circle-S3">LILYGO T-Circle-S3</a>
-- <a href="https://oshwhub.com/tenclass01/xmini_c3" target="_blank" title="XiaGe Mini C3">XiaGe Mini C3</a>
-- <a href="https://oshwhub.com/movecall/cuican-ai-pendant-lights-up-y" target="_blank" title="Movecall CuiCan ESP32S3">CuiCan AI Pendant</a>
-- <a href="https://github.com/WMnologo/xingzhi-ai" target="_blank" title="WMnologo-Xingzhi-1.54">WMnologo-Xingzhi-1.54TFT</a>
-- <a href="https://www.seeedstudio.com/SenseCAP-Watcher-W1-A-p-5979.html" target="_blank" title="SenseCAP Watcher">SenseCAP Watcher</a>
-- <a href="https://www.bilibili.com/video/BV1BHJtz6E2S/" target="_blank" title="ESP-HI Low Cost Robot Dog">ESP-HI Low Cost Robot Dog</a>
+The dedicated board class initializes the SPI and I2C buses, probes touch hardware, configures the camera, creates the LCD display, starts the camera uploader, and exposes the audio codec and peripherals to the common application layer.
 
-<div style="display: flex; justify-content: space-between;">
-  <a href="docs/v1/lichuang-s3.jpg" target="_blank" title="LiChuang ESP32-S3 Development Board">
-    <img src="docs/v1/lichuang-s3.jpg" width="240" />
-  </a>
-  <a href="docs/v1/espbox3.jpg" target="_blank" title="Espressif ESP32-S3-BOX3">
-    <img src="docs/v1/espbox3.jpg" width="240" />
-  </a>
-  <a href="docs/v1/m5cores3.jpg" target="_blank" title="M5Stack CoreS3">
-    <img src="docs/v1/m5cores3.jpg" width="240" />
-  </a>
-  <a href="docs/v1/atoms3r.jpg" target="_blank" title="AtomS3R + Echo Base">
-    <img src="docs/v1/atoms3r.jpg" width="240" />
-  </a>
-  <a href="docs/v1/magiclick.jpg" target="_blank" title="Magic Button 2.4">
-    <img src="docs/v1/magiclick.jpg" width="240" />
-  </a>
-  <a href="docs/v1/waveshare.jpg" target="_blank" title="Waveshare ESP32-S3-Touch-AMOLED-1.8">
-    <img src="docs/v1/waveshare.jpg" width="240" />
-  </a>
-  <a href="docs/v1/lilygo-t-circle-s3.jpg" target="_blank" title="LILYGO T-Circle-S3">
-    <img src="docs/v1/lilygo-t-circle-s3.jpg" width="240" />
-  </a>
-  <a href="docs/v1/xmini-c3.jpg" target="_blank" title="XiaGe Mini C3">
-    <img src="docs/v1/xmini-c3.jpg" width="240" />
-  </a>
-  <a href="docs/v1/movecall-cuican-esp32s3.jpg" target="_blank" title="CuiCan">
-    <img src="docs/v1/movecall-cuican-esp32s3.jpg" width="240" />
-  </a>
-  <a href="docs/v1/wmnologo_xingzhi_1.54.jpg" target="_blank" title="WMnologo-Xingzhi-1.54">
-    <img src="docs/v1/wmnologo_xingzhi_1.54.jpg" width="240" />
-  </a>
-  <a href="docs/v1/sensecap_watcher.jpg" target="_blank" title="SenseCAP Watcher">
-    <img src="docs/v1/sensecap_watcher.jpg" width="240" />
-  </a>
-  <a href="docs/v1/esp-hi.jpg" target="_blank" title="ESP-HI Low Cost Robot Dog">
-    <img src="docs/v1/esp-hi.jpg" width="240" />
-  </a>
-</div>
+### Device-Side Capabilities
 
-## Software
+- Offline wake-word detection through ESP-SR
+- Streaming speech input and speech playback
+- Opus audio encoding and decoding
+- Touch and voice interaction
+- Large-format subtitles and A/B choice pages
+- Interactive Reading and anti-fraud UI capability negotiation
+- Camera capture support
+- Wi-Fi provisioning and reconnection
+- MCP support for extensible device control
 
-### Firmware Flashing
+## System Architecture
 
-For beginners, it is recommended to use the firmware that can be flashed without setting up a development environment.
+The deployment has three cooperating parts:
 
-The firmware connects to the official [xiaozhi.me](https://xiaozhi.me) server by default. Personal users can register an account to use the Qwen real-time model for free.
+1. **Companion device**: captures speech and touch input, renders the interface, plays audio, and maintains local interaction state.
+2. **Backend and service console**: runs speech, dialogue, story, content, and management services.
+3. **Optional family client**: receives authorized summaries and sends supported content or screening tasks.
 
-👉 [Beginner's Firmware Flashing Guide](https://ccnphfhqs21z.feishu.cn/wiki/Zpz4wXBtdimBrLk25WdcXzxcnNS)
+The device does not run the full AI stack locally. It streams compact audio to the backend and receives generated speech plus structured UI commands. This keeps the embedded firmware responsive while allowing the service side to maintain dialogue context and content state.
 
-### Development Environment
+## Device-to-Server Communication
 
-- Cursor or VSCode
-- Install ESP-IDF plugin, select SDK version 5.4 or above
-- Linux is better than Windows for faster compilation and fewer driver issues
-- This project uses Google C++ code style, please ensure compliance when submitting code
+### WebSocket Session
 
-### Developer Documentation
+The customized experiences use the existing XiaoZhi WebSocket connection. When a voice session opens, the firmware connects to the configured endpoint and sends authentication and device metadata in the handshake:
 
-- [Custom Board Guide](docs/custom-board.md) - Learn how to create custom boards for XiaoZhi AI
-- [MCP Protocol IoT Control Usage](docs/mcp-usage.md) - Learn how to control IoT devices via MCP protocol
-- [MCP Protocol Interaction Flow](docs/mcp-protocol.md) - Device-side MCP protocol implementation
-- [MQTT + UDP Hybrid Communication Protocol Document](docs/mqtt-udp.md)
-- [A detailed WebSocket communication protocol document](docs/websocket.md)
+- `Authorization: Bearer <token>`
+- `Protocol-Version`
+- `Device-Id`
+- `Client-Id`
 
-## Large Model Configuration
+The device then sends a JSON `hello` message describing its audio parameters and supported features. For this board, the feature set can include touch-enabled Interactive Reading and anti-fraud interfaces.
 
-If you already have a XiaoZhi AI chatbot device and have connected to the official server, you can log in to the [xiaozhi.me](https://xiaozhi.me) console for configuration.
+### Audio and Control Data
 
-👉 [Backend Operation Video Tutorial (Old Interface)](https://www.bilibili.com/video/BV1jUCUY2EKM/)
+The same WebSocket carries two kinds of traffic:
 
-## Related Open Source Projects
+- **Binary frames** contain Opus audio for microphone upload and TTS playback.
+- **UTF-8 JSON text frames** carry session state, speech events, UI actions, MCP messages, and application-specific commands.
 
-For server deployment on personal computers, refer to the following open-source projects:
+Interactive Reading and anti-fraud interactions reuse this connection for page state, choices, confirmations, and playback control. The detailed message definitions remain in the protocol documents rather than being duplicated here.
 
-- [xinnan-tech/xiaozhi-esp32-server](https://github.com/xinnan-tech/xiaozhi-esp32-server) Python server
-- [joey-zhou/xiaozhi-esp32-server-java](https://github.com/joey-zhou/xiaozhi-esp32-server-java) Java server
-- [AnimeAIChat/xiaozhi-server-go](https://github.com/AnimeAIChat/xiaozhi-server-go) Golang server
-- [hackers365/xiaozhi-esp32-server-golang](https://github.com/hackers365/xiaozhi-esp32-server-golang) Golang server
+See the protocol documents for implementation details:
 
-Other client projects using the XiaoZhi communication protocol:
+- [WebSocket protocol](docs/websocket.md)
+- [Interactive Reading board protocol V2](docs/interactive-story-board-v2.md)
+- [Frontend/backend communication audit](docs/frontend-backend-communication-audit.md)
+- [MQTT + UDP protocol](docs/mqtt-udp.md)
+- [MCP interaction flow](docs/mcp-protocol.md)
 
-- [huangjunsen0406/py-xiaozhi](https://github.com/huangjunsen0406/py-xiaozhi) Python client
-- [TOM88812/xiaozhi-android-client](https://github.com/TOM88812/xiaozhi-android-client) Android client
-- [100askTeam/xiaozhi-linux](http://github.com/100askTeam/xiaozhi-linux) Linux client by 100ask
-- [78/xiaozhi-sf32](https://github.com/78/xiaozhi-sf32) Bluetooth chip firmware by Sichuan
-- [QuecPython/solution-xiaozhiAI](https://github.com/QuecPython/solution-xiaozhiAI) QuecPython firmware by Quectel
+### Internal-Network Service Console
 
-Custom Assets Tools:
+The backend and service console used for this project connect to the **private intranet of the author's internship organization**. The repository intentionally does not publish internal hostnames, IP addresses, access tokens, credentials, or deployment procedures.
 
-- [78/xiaozhi-assets-generator](https://github.com/78/xiaozhi-assets-generator) Custom Assets Generator (Wake words, fonts, emojis, backgrounds)
+To run the complete deployed system, a developer must have permission to access that network and must receive the endpoint and credentials through the organization's approved process. A device on the public Internet will not reach the internal service directly. Do not hard-code private addresses or secrets in source files or commits.
 
-## About the Project
+Developers outside that environment can still study and build the firmware, but the AI dialogue, story, anti-fraud, family-client, and service-console workflows require a compatible XiaoZhi backend or an authorized internal deployment.
 
-This is an open-source ESP32 project, released under the MIT license, allowing anyone to use it for free, including for commercial purposes.
+## Repository Layout
 
-We hope this project helps everyone understand AI hardware development and apply rapidly evolving large language models to real hardware devices.
+```text
+main/
+├── audio/                         Audio capture, codecs, wake word, and playback
+├── boards/HiwonderExploit_S3/     Hiwonder ESP32-S3 hardware adaptation
+├── camera_agent/                  Camera upload and camera-related functions
+├── display/                       LCD, LVGL, images, fonts, and themes
+├── protocols/                     WebSocket and MQTT protocol implementations
+└── story/                         Interactive Reading and anti-fraud UI logic
 
-If you have any ideas or suggestions, please feel free to raise Issues or join our [Discord](https://discord.gg/bXqgAfRm) or QQ group: 994694848
+docs/                              Protocol and developer documentation
+partitions/v2/16m_hiwonder.csv     Hiwonder flash layout
+scripts/                           Build, release, and asset utilities
+```
 
-## Star History
+`main_backup_before_hiwonder/` is a reference snapshot and is not active application source. Generated `build/` output and downloaded `managed_components/` dependencies should not be edited manually.
 
-<a href="https://star-history.com/#78/xiaozhi-esp32&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=78/xiaozhi-esp32&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=78/xiaozhi-esp32&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=78/xiaozhi-esp32&type=Date" />
- </picture>
-</a> 
+## Acknowledgements
+
+This project is built on the open-source [XiaoZhi ESP32](https://github.com/78/xiaozhi-esp32) ecosystem and retains its core embedded architecture, audio pipeline, protocol support, and MCP extensibility. The elderly-care interaction design and Hiwonder ESP32-S3 adaptation were developed for the Listening Companion prototype.
+
+## License
+
+This repository follows the license terms in [LICENSE](LICENSE). Third-party components and content may have their own licenses or usage requirements.
