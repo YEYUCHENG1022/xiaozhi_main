@@ -4,8 +4,9 @@ An elderly companion robot built on the [XiaoZhi AI](https://github.com/78/xiaoz
 
 Listening Companion combines natural voice conversation, a touch-friendly interface, interactive stories, anti-fraud education, and family-oriented care features in a desktop device. The project is designed for older adults who may spend long periods alone and need an accessible way to talk, listen, learn, and stay connected with their families.
 
-![Uploading ChatGPT 图像 2026年10月14日 09_58_13.png…]()
-
+<p align="center">
+  <img src="docs/readme/companion-home.png" alt="Listening Companion home screen" width="720">
+</p>
 
 > [!IMPORTANT]
 > This repository contains the device firmware. The companion backend and service console used by this deployment run inside the private network of the author's internship organization. They are not public Internet services and cannot be reached without authorized access to that internal network.
